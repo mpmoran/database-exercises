@@ -244,8 +244,107 @@ WHERE country.country = 'Canada';
 
 -- 16. Sales have been lagging among young families, and you wish to target all family movies for a promotion.
 -- Identify all movies categorized as famiy films.
+SELECT film.title
+FROM film
+JOIN film_category USING(film_id)
+JOIN category USING(category_id)
+WHERE category.name = "Family";
 
 
 -- 17. Write a query to display how much business, in dollars, each store brought in.
+SELECT inventory.store_id AS 'Store ID', SUM(payment.amount) AS 'Total Revenue'
+FROM inventory
+JOIN rental USING(inventory_id)
+JOIN payment USING(rental_id)
+GROUP BY inventory.store_id;
+
 -- 18. Write a query to display for each store its store ID, city, and country.
+SELECT store.store_id AS 'Store ID', city.city AS City, country.country AS Country
+FROM store
+JOIN address USING(address_id)
+JOIN city USING(city_id)
+JOIN country USING(country_id);
+
 -- 19. List the top five genres in gross revenue in descending order. (Hint: you may need to use the following tables: category, film_category, inventory, payment, and rental.)
+SELECT category.name, SUM(payment.amount) AS 'Gross Revenue'
+FROM category
+JOIN film_category USING(category_id)
+JOIN inventory USING(film_id)
+JOIN rental USING(inventory_id)
+JOIN payment USING(rental_id)
+GROUP BY category.name
+ORDER BY SUM(payment.amount) DESC
+LIMIT 5;
+
+-- MORE BONUS
+-- 1. What is the average replacement cost of a film?
+SELECT ROUND(AVG(replacement_cost), 2) AS 'Average Replacement Cost'
+FROM film;
+
+-- Does this change depending on the rating of the film? Yes, but slightly; the more mature the rating, the higher the price.
+SELECT rating AS Rating, ROUND(AVG(replacement_cost), 2) AS 'Average Replacement Cost'
+FROM film
+GROUP BY rating
+ORDER BY ROUND(AVG(replacement_cost), 2);
+
+-- 2. How many different films of each genre are in the database?
+SELECT category.name AS Genre, COUNT(*) AS 'Number of Films'
+FROM category
+JOIN film_category USING(category_id)
+JOIN film USING(film_id)
+GROUP BY category.name
+ORDER BY category.name;
+
+-- 3. What are the 5 frequently rented films?
+SELECT film.title, COUNT(rental.rental_id) AS 'Number of Rental'
+FROM film
+JOIN inventory USING(film_id)
+JOIN rental USING(inventory_id)
+GROUP BY film.title
+ORDER BY COUNT(rental.rental_id) DESC
+LIMIT 7;
+
+-- 4. What are the most most profitable films (in terms of gross revenue)?
+SELECT film.title AS Film, SUM(payment.amount) AS 'Gross Revenue'
+FROM film
+JOIN inventory USING(film_id)
+JOIN rental USING(inventory_id)
+JOIN payment USING(rental_id)
+GROUP BY film.title
+ORDER BY SUM(payment.amount) DESC
+LIMIT 5;
+
+-- 5. Who is the best customer?
+SELECT CONCAT(customer.last_name, ', ', customer.first_name) AS Customer, SUM(payment.amount) as Total
+FROM customer
+JOIN payment USING(customer_id)
+GROUP BY customer.customer_id
+ORDER BY SUM(payment.amount) DESC
+LIMIT 1;
+
+-- 6. Who are the most popular actors (that have appeared in the most films)?
+SELECT CONCAT(actor.last_name, ', ', actor.first_name), COUNT(film_actor.film_id) AS 'Total Films'
+FROM actor
+JOIN film_actor USING(actor_id)
+GROUP BY actor.actor_id
+ORDER BY COUNT(film_actor.film_id) DESC
+LIMIT 5;
+
+-- 7. What are the sales for each store for each month in 2005?
+SELECT DATE_FORMAT(payment.payment_date, '%Y-%m') AS MONTH, inventory.store_id AS 'Store ID', SUM(payment.amount) AS Sales
+FROM payment
+JOIN rental USING(rental_id)
+JOIN inventory USING(inventory_id)
+WHERE DATE_FORMAT(payment.payment_date, '%Y-%m') LIKE '2005-%'
+GROUP BY DATE_FORMAT(payment.payment_date, '%Y-%m'), inventory.store_id;
+
+-- 8. Bonus: Find the film title, customer name, customer phone number, and customer address for all the outstanding DVDs.
+SELECT film.title AS 'Film Title', CONCAT(customer.last_name, ', ', customer.first_name) AS Customer, address.phone AS 'Phone', address.address as 'Address', city.city AS 'City', country.country AS 'Country'
+FROM film
+JOIN inventory USING(film_id)
+JOIN rental USING(inventory_id)
+JOIN customer USING(customer_id)
+JOIN address USING(address_id)
+JOIN city USING(city_id)
+JOIN country USING(country_id)
+WHERE rental.return_date IS NULL;
